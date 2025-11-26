@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Escape Room – Rettet das Klassenfest! (Hauswirtschaft)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #111323;
+      --bg-panel: #1b1f38;
+      --accent: #e7c867;
+      --accent-soft: rgba(231, 200, 103, 0.2);
+      --text: #f3f3f3;
+      --error: #ff5c5c;
+      --ok: #66d18f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #212547 0, #080910 55%, #05050a 100%);
+      color: var(--text);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #202545 0, #05050a 70%);
+      z-index: 20;
+    }
+
+    .frame {
+      border-radius: 24px;
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at top left, rgba(255,255,255,0.03), transparent 55%);
+      box-shadow:
+        0 0 40px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
+      padding: 32px 40px;
+      max-width: 900px;
+      width: 90%;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      font-family: "Cinzel", "Times New Roman", serif;
+      letter-spacing: 0.04em;
+    }
+
+    h1 {
+      font-size: 2.3rem;
+      color: var(--accent);
+      text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
+    }
+
+    h2 {
+      font-size: 1.7rem;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .intro-text {
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.55rem 1.3rem;
+      background: linear-gradient(135deg, #f5d981, #c89e37);
+      color: #1b1406;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+      text-decoration: none;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 14px 28px rgba(0,0,0,0.65);
+    }
+
+    .button:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+    }
+
+    .button-ghost {
+      background: transparent;
+      color: var(--accent);
+      border-color: rgba(231,200,103,0.6);
+      box-shadow: none;
+    }
+
+    .button-ghost:hover {
+      background: rgba(231,200,103,0.08);
+      box-shadow: 0 0 18px rgba(0,0,0,0.5);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 24px auto 40px auto;
+      padding: 0 18px 32px 18px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      font-size: 0.8rem;
+    }
+
+    #timer {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid rgba(231,200,103,0.6);
+      background: radial-gradient(circle at top, rgba(231,200,103,0.16), transparent 60%);
+      color: var(--accent);
+    }
+
+    #timer.urgent {
+      color: var(--error);
+      border-color: var(--error);
+    }
+
+    .puzzles-grid {
+      display: block;
+    }
+
+    .puzzle-card {
+      position: relative;
+      background: radial-gradient(circle at top left, rgba(255,255,255,0.04), transparent 55%);
+      border-radius: 18px;
+      padding: 16px 16px 14px 16px;
+      border: 1px solid rgba(255,255,255,0.09);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .puzzle-card.hidden {
+      display: none;
+    }
+
+    .puzzle-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(231,200,103,0.08), transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .puzzle-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .puzzle-number {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      opacity: 0.8;
+    }
+
+    .puzzle-icon {
+      font-size: 1.3rem;
+    }
+
+    .puzzle-body {
+      font-size: 0.95rem;
+      line-height: 1.55;
+      position: relative;
+      z-index: 1;
+    }
+
+    .puzzle-body ul {
+      margin: 0.35rem 0 0.35rem 1.1rem;
+      padding: 0;
+    }
+
+    .puzzle-body li {
+      margin-bottom: 0.15rem;
+    }
+
+    .puzzle-footer {
+      margin-top: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 1;
+      position: relative;
+    }
+
+    .puzzle-input {
+      width: 54px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(0,0,0,0.35);
+      color: var(--text);
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .puzzle-input[readonly] {
+      opacity: 0.7;
+      border-color: rgba(102,209,143,0.8);
+    }
+
+    .result-indicator {
+      min-width: 24px;
+      text-align: center;
+      font-size: 1.2rem;
+    }
+
+    .hint-text {
+      font-size: 0.8rem;
+      opacity: 0.75;
+    }
+
+    .status-ok {
+      color: var(--ok);
+    }
+
+    .status-error {
+      color: var(--error);
+    }
+
+    .final-panel {
+      margin-top: 28px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px dashed rgba(231,200,103,0.7);
+      background: radial-gradient(circle at left, rgba(231,200,103,0.12), transparent 60%);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .code-slots {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .code-slot {
+      width: 24px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid rgba(231,200,103,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(0,0,0,0.4);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+    }
+
+    .code-slot.filled {
+      background: rgba(231,200,103,0.12);
+    }
+
+    .success-banner {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(102,209,143,0.12), rgba(231,200,103,0.16));
+      border: 1px solid rgba(102,209,143,0.7);
+      color: #eafff2;
+      display: none;
+    }
+
+    .success-banner strong {
+      color: var(--accent);
+    }
+
+    .success-banner.visible {
+      display: block;
+    }
+
+    .time-up {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: rgba(255,92,92,0.08);
+      border: 1px solid rgba(255,92,92,0.6);
+      color: #ffd6d6;
+      display: none;
+    }
+
+    .time-up.visible {
+      display: inline-block;
+    }
+
+    .pager {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pager-center {
+      text-align: center;
+      flex: 1;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.7rem;
+      }
+      .frame {
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Intro-Overlay -->
+<div class="overlay" id="introOverlay">
+  <div class="frame">
+    <h1>Escape Room – Rettet das Klassenfest!</h1>
+    <p class="intro-text">
+      Heute ist ein großer Tag: Euer Klassenfest steht bevor. Doch jemand hat die
+      <strong>Küche verriegelt</strong> und den zehnstelligen Zahlencode versteckt.<br><br>
+      In der Schule tauchen geheimnisvolle Hinweise auf – jedes Rätsel verrät euch genau
+      <strong>eine Ziffer</strong> des Codes. Nur wenn ihr alle Rätsel richtig löst und die
+      Ziffern in der richtigen Reihenfolge kombiniert, öffnet sich die Küche rechtzeitig und
+      das Fest kann stattfinden.
+    </p>
+    <p class="intro-text">
+      Arbeitet zusammen, nutzt euer Wissen aus dem Hauswirtschaftsunterricht und denkt logisch.<br>
+      <em>Beobachten. Kombinieren. Entschlüsseln.</em>
+    </p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-top:1.4rem;flex-wrap:wrap;">
+      <button class="button" id="startButton" type="button">
+        ▶ Spiel starten
+      </button>
+      <span class="hint-text">
+        Tipp: Pro Rätsel sind maximal <strong>2 Versuche</strong> möglich – also gut überlegen, bevor ihr bestätigt.
+      </span>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="topbar">
+    <div>
+      <div class="badge">Hauswirtschaft · Escape Room</div>
+      <div class="hint-text" style="margin-top:4px;">
+        Jede Aufgabe liefert eine Ziffer. Zusammen ergeben sie den 10-stelligen Code für die Küche.
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+      <div id="timer">20:00</div>
+      <span id="timeUpBadge" class="time-up">Zeit abgelaufen – ihr dürft trotzdem zu Ende knobeln.</span>
+    </div>
+  </div>
+
+  <div class="puzzles-grid">
+    <!-- Rätsel 1 -->
+    <section class="puzzle-card" data-id="1">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 1</div>
+          <h3>Das Regal im Supermarkt</h3>
+        </div>
+        <div class="puzzle-icon">🧊</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          In einem Supermarkt hat jemand Lebensmittel an seltsame Orte geräumt.
+          Nicht jede Lagerung ist sinnvoll – manche sind sogar gefährlich.
+        </p>
+        <ul>
+          <li>Frischer Lachs bei Zimmertemperatur</li>
+          <li>Kartoffeln im Kühlschrank</li>
+          <li>Tomaten in der Gefriertruhe</li>
+          <li>H-Milch (ungeöffnet) im Kühlschrank</li>
+          <li>Bananen im Kühlregal</li>
+        </ul>
+        <p><strong>Frage:</strong> Wie viele dieser Lagerungen sind ungeeignet?</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-1" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(1)">prüfen</button>
+        <span class="result-indicator" id="result-1"></span>
+      </div>
+      <div class="hint-text">Ziffer 1 des Codes</div>
+    </section>
+
+    <!-- Rätsel 2 -->
+    <section class="puzzle-card" data-id="2">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 2</div>
+          <h3>Die stille Küche</h3>
+        </div>
+        <div class="puzzle-icon">🧼</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          Auf den ersten Blick wirkt die Küche ordentlich – doch bei genauerem Hinsehen
+          passieren mehrere Hygiene-Fauxpas.
+        </p>
+        <p>
+          <em>Paul kommt von draußen und beginnt direkt mit dem Kochen. Er trägt Armbanduhr
+          und Ringe. Julia probiert mit einem Holzlöffel und stellt ihn zurück in den Topf.
+          Das benutzte Schneidebrett für rohes Fleisch nutzt Leo später für Rohkost.
+          Der Topf mit Suppe steht offen auf der Fensterbank. Die Geschirrtücher hängen
+          direkt neben dem Mülleimer.</em>
+        </p>
+        <p><strong>Frage:</strong> Wie viele Hygieneregeln werden hier verletzt?</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-2" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(2)">prüfen</button>
+        <span class="result-indicator" id="result-2"></span>
+      </div>
+      <div class="hint-text">Ziffer 2 des Codes</div>
+    </section>
+
+    <!-- Rätsel 3 -->
+    <section class="puzzle-card" data-id="3">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 3</div>
+          <h3>Die süßen Fallen</h3>
+        </div>
+        <div class="puzzle-icon">🍭</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          Auf dem Buffet liegen lauter Leckereien – für eine gesunde Ernährung
+          gehören sie aber in die Kategorie „selten genießen“.
+        </p>
+        <ul>
+          <li>Schokolade</li>
+          <li>Cola</li>
+          <li>Chips</li>
+          <li>Pommes</li>
+          <li>Gummibärchen</li>
+          <li>Energy-Drink</li>
+        </ul>
+        <p><strong>Frage:</strong> Wie viele dieser Produkte gehören zur Kategorie „selten genießen“?</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-3" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(3)">prüfen</button>
+        <span class="result-indicator" id="result-3"></span>
+      </div>
+      <div class="hint-text">Ziffer 3 des Codes</div>
+    </section>
+
+    <!-- Rätsel 4 -->
+    <section class="puzzle-card" data-id="4">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 4</div>
+          <h3>Die Zuckerfalle</h3>
+        </div>
+        <div class="puzzle-icon">🥤</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          Fünf Getränke stehen nebeneinander. Einige enthalten viel Zucker, andere fast keinen.
+          Sortiere sie gedanklich von <strong>viel</strong> zu <strong>wenig</strong> Zucker.
+        </p>
+        <ul>
+          <li>Cola</li>
+          <li>Apfelsaft</li>
+          <li>Energy-Drink</li>
+          <li>Milch</li>
+          <li>Wasser</li>
+        </ul>
+        <p><strong>Frage:</strong> Welche Position hat die <strong>Milch</strong> in dieser Reihenfolge? (1 = am meisten Zucker)</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-4" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(4)">prüfen</button>
+        <span class="result-indicator" id="result-4"></span>
+      </div>
+      <div class="hint-text">Ziffer 4 des Codes</div>
+    </section>
+
+    <!-- Rätsel 5 -->
+    <section class="puzzle-card" data-id="5">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 5</div>
+          <h3>Die Dampfküche</h3>
+        </div>
+        <div class="puzzle-icon">🍳</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          In der Küche werden verschiedene Zubereitungstechniken angewendet.
+          Einige arbeiten mit Wasser oder Wasserdampf, andere nicht.
+        </p>
+        <ul>
+          <li>Braten</li>
+          <li>Dünsten</li>
+          <li>Schmoren</li>
+          <li>Backen</li>
+          <li>Blanchieren</li>
+          <li>Grillen</li>
+          <li>Pochieren</li>
+        </ul>
+        <p><strong>Frage:</strong> Wie viele dieser Techniken nutzen Wasser oder Dampf?</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-5" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(5)">prüfen</button>
+        <span class="result-indicator" id="result-5"></span>
+      </div>
+      <div class="hint-text">Ziffer 5 des Codes</div>
+    </section>
+
+    <!-- Rätsel 6 -->
+    <section class="puzzle-card" data-id="6">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 6</div>
+          <h3>Die Verwandlung</h3>
+        </div>
+        <div class="puzzle-icon">🧪</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          Vor dir verändern sich Lebensmittel. Manche Vorgänge sind nur äußerlich
+          (physikalisch), andere verändern das Lebensmittel dauerhaft (chemisch).
+        </p>
+        <ul>
+          <li>Ein Apfel wird braun</li>
+          <li>Butter wird weich</li>
+          <li>Wasser kocht</li>
+          <li>Brot wird gebacken</li>
+          <li>Fleisch bräunt beim Braten</li>
+        </ul>
+        <p><strong>Frage:</strong> Wie viele dieser Vorgänge sind chemische Veränderungen?</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-6" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(6)">prüfen</button>
+        <span class="result-indicator" id="result-6"></span>
+      </div>
+      <div class="hint-text">Ziffer 6 des Codes</div>
+    </section>
+
+    <!-- Rätsel 7 -->
+    <section class="puzzle-card" data-id="7">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 7</div>
+          <h3>Die neun Lebensmittel</h3>
+        </div>
+        <div class="puzzle-icon">🥕</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          Neun verschiedene Lebensmittel liegen auf einem großen Holztisch.
+          Sie stammen aus mehreren Lebensmittelgruppen.
+        </p>
+        <ul>
+          <li>Apfel</li>
+          <li>Butter</li>
+          <li>Käse</li>
+          <li>Brot</li>
+          <li>Linsen</li>
+          <li>Tomaten</li>
+          <li>Sahne</li>
+          <li>Joghurt</li>
+          <li>Öl</li>
+        </ul>
+        <p><strong>Frage:</strong> Wie viele unterschiedliche Lebensmittelgruppen sind hier vertreten?</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-7" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(7)">prüfen</button>
+        <span class="result-indicator" id="result-7"></span>
+      </div>
+      <div class="hint-text">Ziffer 7 des Codes</div>
+    </section>
+
+    <!-- Rätsel 8 -->
+    <section class="puzzle-card" data-id="8">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 8</div>
+          <h3>Die geheimen Zeichen</h3>
+        </div>
+        <div class="puzzle-icon">🔖</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          Auf verschiedenen Verpackungen findest du Abkürzungen und Siegel.
+          Einige sagen etwas über Qualität oder Herkunft eines Lebensmittels aus.
+        </p>
+        <ul>
+          <li>MHD</li>
+          <li>GVO</li>
+          <li>Bio</li>
+          <li>EU-Öko</li>
+          <li>VEGAN</li>
+        </ul>
+        <p><strong>Frage:</strong> Wie viele dieser Begriffe betreffen rechtlich Qualität oder Herkunft?</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-8" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(8)">prüfen</button>
+        <span class="result-indicator" id="result-8"></span>
+      </div>
+      <div class="hint-text">Ziffer 8 des Codes</div>
+    </section>
+
+    <!-- Rätsel 9 -->
+    <section class="puzzle-card" data-id="9">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 9</div>
+          <h3>Das Pfannkuchen-Rezept</h3>
+        </div>
+        <div class="puzzle-icon">⏲️</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          Im Rezeptbuch findest du ein einfaches Pfannkuchen-Rezept:
+        </p>
+        <p>
+          <em>250&nbsp;g Mehl, 2 Eier und 100&nbsp;ml Milch ergeben genau 10 Pfannkuchen.</em>
+        </p>
+        <p>
+          Für das Klassenfest wird alles vervielfacht. Du rechnest die Zutaten so hoch,
+          dass das Verhältnis gleich bleibt:
+        </p>
+        <p>
+          <strong>1&nbsp;kg Mehl, 8 Eier und 500&nbsp;ml Milch</strong>
+        </p>
+        <p><strong>Frage:</strong> Wie viele Pfannkuchen entstehen damit insgesamt?<br>
+           Gesucht ist nur die <strong>letzte Ziffer</strong> dieser Anzahl.</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-9" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(9)">prüfen</button>
+        <span class="result-indicator" id="result-9"></span>
+      </div>
+      <div class="hint-text">Ziffer 9 des Codes</div>
+    </section>
+
+    <!-- Rätsel 10 -->
+    <section class="puzzle-card" data-id="10">
+      <div class="puzzle-header">
+        <div>
+          <div class="puzzle-number">Rätsel 10</div>
+          <h3>Die Mülltrennung</h3>
+        </div>
+        <div class="puzzle-icon">🚮</div>
+      </div>
+      <div class="puzzle-body">
+        <p>
+          Neben der Küche stehen verschiedene Abfälle. Einige gehören in den Gelben Sack,
+          andere nicht.
+        </p>
+        <ul>
+          <li>Bananenschale</li>
+          <li>Tetrapak (ausgespült)</li>
+          <li>Joghurtbecher (sauber)</li>
+          <li>Eierschale</li>
+          <li>Alufolie</li>
+          <li>Kaputter Tupper-Behälter</li>
+        </ul>
+        <p><strong>Frage:</strong> Wie viele dieser Abfälle gehören <strong>nicht</strong> in den Gelben Sack?</p>
+      </div>
+      <div class="puzzle-footer">
+        <input class="puzzle-input" type="number" min="0" max="9" id="input-10" />
+        <button class="button button-ghost" type="button" onclick="checkPuzzle(10)">prüfen</button>
+        <span class="result-indicator" id="result-10"></span>
+      </div>
+      <div class="hint-text">Ziffer 10 des Codes</div>
+    </section>
+  </div>
+
+  <!-- Pager für Einzelansicht -->
+  <div class="pager">
+    <button class="button button-ghost" id="prevPuzzle" type="button">← vorheriges Rätsel</button>
+    <div class="pager-center">
+      <span class="hint-text">Rätsel <span id="currentPuzzleIndex">1</span> / 10</span>
+    </div>
+    <button class="button button-ghost" id="nextPuzzle" type="button">nächstes Rätsel →</button>
+  </div>
+
+  <!-- Finaler Code-Bereich -->
+  <div class="final-panel">
+    <div>
+      <div class="puzzle-number">Finale</div>
+      <h3>Der Küchencode</h3>
+      <p class="hint-text">
+        Wenn alle zehn Ziffern richtig sind, erscheint der Code hier automatisch – und die Küche ist „geöffnet“.
+      </p>
+    </div>
+    <div>
+      <div class="code-slots" id="codeSlots">
+        <!-- 10 Slots -->
+      </div>
+    </div>
+  </div>
+
+  <div id="successBanner" class="success-banner">
+    <strong>Geschafft!</strong> Alle Rätsel sind gelöst, der Code ist vollständig und die Küche kann für das Klassenfest geöffnet werden.
+  </div>
+
+</main>
+
+<script>
+  // Richtige Ziffern
+  const answers = {
+    1: "4",
+    2: "6",
+    3: "6",
+    4: "4",
+    5: "4",
+    6: "3",
+    7: "6",
+    8: "5",
+    9: "0",
+    10: "3"
+  };
+
+  const totalPuzzles = 10;
+  let currentPuzzle = 1;
+  const attempts = {};
+  for (let i = 1; i <= totalPuzzles; i++) {
+    attempts[i] = 0;
+  }
+
+  // Code-Slots
+  const slotsContainer = document.getElementById("codeSlots");
+  for (let i = 0; i < 10; i++) {
+    const slot = document.createElement("div");
+    slot.className = "code-slot";
+    slot.id = "code-slot-" + (i + 1);
+    slot.textContent = "•";
+    slotsContainer.appendChild(slot);
+  }
+
+  function showPuzzle(n) {
+    if (n < 1) n = 1;
+    if (n > totalPuzzles) n = totalPuzzles;
+    currentPuzzle = n;
+
+    for (let i = 1; i <= totalPuzzles; i++) {
+      const card = document.querySelector('.puzzle-card[data-id="' + i + '"]');
+      if (!card) continue;
+      if (i === n) {
+        card.classList.remove("hidden");
+      } else {
+        card.classList.add("hidden");
+      }
+    }
+
+    const idx = document.getElementById("currentPuzzleIndex");
+    if (idx) idx.textContent = String(currentPuzzle);
+
+    const prevBtn = document.getElementById("prevPuzzle");
+    const nextBtn = document.getElementById("nextPuzzle");
+    if (prevBtn) prevBtn.disabled = currentPuzzle === 1;
+    if (nextBtn) nextBtn.disabled = currentPuzzle === totalPuzzles;
+  }
+
+  function checkPuzzle(id) {
+    const input = document.getElementById("input-" + id);
+    const result = document.getElementById("result-" + id);
+    if (!input || !result) return;
+
+    // Wenn schon gesperrt (falsch), nichts mehr prüfen
+    if (input.readOnly && input.value.trim() !== answers[id]) {
+      return;
+    }
+
+    const value = (input.value || "").trim();
+    if (value === answers[id]) {
+      result.textContent = "✔";
+      result.className = "result-indicator status-ok";
+      input.readOnly = true;
+      input.style.borderColor = "rgba(102,209,143,0.9)";
+      fillCodeSlots();
+      checkAllSolved();
+    } else {
+      attempts[id] = (attempts[id] || 0) + 1;
+      if (attempts[id] >= 2) {
+        result.textContent = "⛔";
+        result.className = "result-indicator status-error";
+        input.readOnly = true;
+        input.style.borderColor = "rgba(255,92,92,0.9)";
+      } else {
+        result.textContent = "✖";
+        result.className = "result-indicator status-error";
+      }
+    }
+  }
+
+  function fillCodeSlots() {
+    for (let i = 1; i <= 10; i++) {
+      const inp = document.getElementById("input-" + i);
+      const slot = document.getElementById("code-slot-" + i);
+      if (!inp || !slot) continue;
+      if (inp.readOnly && inp.value.trim() === answers[i]) {
+        slot.textContent = answers[i];
+        slot.classList.add("filled");
+      } else {
+        slot.textContent = "•";
+        slot.classList.remove("filled");
+      }
+    }
+  }
+
+  function checkAllSolved() {
+    for (let i = 1; i <= 10; i++) {
+      const inp = document.getElementById("input-" + i);
+      if (!inp || !inp.readOnly || inp.value.trim() !== answers[i]) {
+        return;
+      }
+    }
+    const banner = document.getElementById("successBanner");
+    if (banner) {
+      banner.classList.add("visible");
+    }
+  }
+
+  // Intro & Timer
+  const introOverlay = document.getElementById("introOverlay");
+  const startButton = document.getElementById("startButton");
+  const timerDisplay = document.getElementById("timer");
+  const timeUpBadge = document.getElementById("timeUpBadge");
+  let timerSeconds = 20 * 60;
+  let timerInterval = null;
+
+  function updateTimer() {
+    const minutes = Math.floor(timerSeconds / 60);
+    const seconds = timerSeconds % 60;
+    timerDisplay.textContent =
+      String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+
+    if (timerSeconds <= 60) {
+      timerDisplay.classList.add("urgent");
+    }
+
+    if (timerSeconds <= 0) {
+      clearInterval(timerInterval);
+      timerDisplay.textContent = "00:00";
+      if (timeUpBadge) {
+        timeUpBadge.classList.add("visible");
+      }
+    } else {
+      timerSeconds--;
+    }
+  }
+
+  function startGame() {
+    if (introOverlay) {
+      introOverlay.style.display = "none";
+    }
+    if (timerInterval) clearInterval(timerInterval);
+    timerSeconds = 20 * 60;
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  if (startButton) {
+    startButton.addEventListener("click", startGame);
+  }
+
+  // Navigation
+  const prevBtn = document.getElementById("prevPuzzle");
+  const nextBtn = document.getElementById("nextPuzzle");
+  if (prevBtn) {
+    prevBtn.addEventListener("click", function () {
+      showPuzzle(currentPuzzle - 1);
+    });
+  }
+  if (nextBtn) {
+    nextBtn.addEventListener("click", function () {
+      showPuzzle(currentPuzzle + 1);
+    });
+  }
+
+  // Startzustand
+  window.addEventListener("load", function () {
+    showPuzzle(1);
+    const firstInput = document.getElementById("input-1");
+    if (firstInput) {
+      setTimeout(function () {
+        firstInput.focus();
+      }, 600);
+    }
+  });
+</script>
+</body>
+</html>
